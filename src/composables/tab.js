@@ -8,18 +8,15 @@ export function useTab() {
 
   const queryTabDuplicates = () => {
     const counts = new Map()
-
     for (const tab of tabs.value) {
-      const url = tab.url || ''
-      if (!url) continue
-      counts.set(url, (counts.get(url) || 0) + 1)
+      const key = tab.url || ''
+      counts.set(key, (counts.get(key) || 0) + 1)
     }
-
-    duplicateTabCount.value = new Set(
-      tabs.value
-        .map((tab) => tab.url || '')
-        .filter((url) => url && (counts.get(url) || 0) > 1),
-    ).size
+    let dupes = 0
+    for (const tab of tabs.value) {
+      if ((counts.get(tab.url || '') || 0) > 1) dupes += 1
+    }
+    duplicateTabCount.value = dupes
   }
 
   const query = async (queryInfo = {}) => {
