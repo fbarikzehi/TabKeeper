@@ -1,46 +1,97 @@
 import { ref, onMounted } from 'vue'
-import browser from "webextension-polyfill";
+import browser from 'webextension-polyfill'
 
 export function useTab() {
-    const tabs = ref([]);
-    const duplicateTabCount = ref(0)
+  const tabs = ref([])
+  const duplicateTabCount = ref(0)
+  const selectedIds = ref(new Set())
 
-    const query = async (queryInfo) => {
-        tabs.value = await browser.tabs.query(queryInfo).then((val) => {
-            return val
-        })
+  const queryTabDuplicates = () => {
+    const counts = new Map()
+
+    for (const tab of tabs.value) {
+      const url = tab.url || ''
+      if (!url) continue
+      counts.set(url, (counts.get(url) || 0) + 1)
     }
 
-    const bringTabToFront = async (tab) => {
-        await browser.windows.update(tab.windowId, {
-            focused: true
-        })
-        await browser.tabs.update(tab.id, {
-            active: true
-        })
-    }
+    duplicateTabCount.value = new Set(
+      tabs.value
+        .map((tab) => tab.url || '')
+        .filter((url) => url && (counts.get(url) || 0) > 1),
+    ).size
+  }
 
-    const bringTabsToBack = async () => {
-        tabs.value.forEach(t => {
-            browser.tabs.update(t.id, {
-                focused: false
-            })
-        });
-    }
+  const query = async (queryInfo = {}) => {
+    tabs.value = await browser.tabs.query(queryInfo)
+    selectedIds.value = new Set()
+    queryTabDuplicates()
+  }
 
-    const handleTabSearch = (val) => {
-        if (val && val.length > 0)
-            tabs.value = tabs.value.filter((t) => t.title.toLowerCase().includes(val.toLowerCase()) || t.url.toLowerCase().includes(val.toLowerCase()))
-        else
-            query({});
-    }
-
-    const queryTabDuplicates = () => {
-        duplicateTabCount.value = tabs.value.filter((tab, i) => tabs.some((e, j) => e.url === tab.url && j !== i))
-    }
-
-    onMounted(() => {
-        queryTabDuplicates()
+  const bringTabToFront = async (tab) => {
+    await browser.windows.update(tab.windowId, {
+      focused: true,
     })
-    return { tabs, duplicateTabCount, query, bringTabToFront, bringTabsToBack, handleTabSearch }
+    await browser.tabs.update(tab.id, {
+      active: true,
+    })
+  }
+
+  const bringTabsToBack = async () => {
+    for (const tab of tabs.value) {
+      await browser.tabs.update(tab.id, {
+        active: false,
+      }).catch(() => {})
+    }
+  }
+
+  const handleTabSearch = async (val) => {
+    const search = (val || '').trim().toLowerCase()
+
+    if (search) {
+      const allTabs = await browser.tabs.query({})
+      tabs.value = allTabs.filter(
+        (tab) =>
+          (tab.title || '').toLowerCase().includes(search) ||
+          (tab.url || '').toLowerCase().includes(search),
+      )
+      queryTabDuplicates()
+      return
+    }
+
+    await query({})
+  }
+
+  const toggleSelect = (tabId) => {
+    const next = new Set(selectedIds.value)
+
+    if (next.has(tabId)) next.delete(tabId)
+    else next.add(tabId)
+
+    selectedIds.value = next
+  }
+
+  const isSelected = (tabId) => selectedIds.value.has(tabId)
+
+  const getTabsForSave = () => {
+    if (selectedIds.value.size === 0) return tabs.value
+    return tabs.value.filter((tab) => selectedIds.value.has(tab.id))
+  }
+
+  onMounted(() => {
+    queryTabDuplicates()
+  })
+
+  return {
+    tabs,
+    duplicateTabCount,
+    selectedIds,
+    query,
+    bringTabToFront,
+    bringTabsToBack,
+    handleTabSearch,
+    toggleSelect,
+    isSelected,
+    getTabsForSave,
+  }
 }
