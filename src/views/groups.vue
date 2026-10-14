@@ -66,7 +66,7 @@ async function saveWindow(win, index) {
                                  checked:border-none checked:text-white hover:cursor-pointer dark:border-white/10 checked:bg-brand-500 dark:checked:bg-brand-400"
                         name="weekly" />
                     <p class="text-sm text-navy-700 dark:text-white truncate text-ellipsis">
-                        {{ win.title.replace('— Mozilla Firefox', '') }}
+                        {{ windowLabel(win, i) }}
                     </p>
                 </div>
                 <div class="flex items-center justify-between gap-1">

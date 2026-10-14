@@ -23,7 +23,7 @@ const searchTerm = ref('')
 const saveMessage = ref('')
 
 const formatTabNameTag = (tab) => {
-  const parts = tab.url.replace('https://', '').replace('https://www.', '').trim().split('.')
+  const parts = (tab.url || '').replace(/^https?:\/\//, '').replace(/^www\./, '').trim().split('.')
   return parts.length > 2 ? parts[1] : parts[0]
 }
 
