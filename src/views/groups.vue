@@ -1,17 +1,28 @@
-<script lang="ts" setup>
-import { ref, onMounted, onBeforeMount } from 'vue';
-import { useWindow } from "../composables/window.js";
+<script setup>
+import { onBeforeMount, ref } from 'vue'
+import browser from 'webextension-polyfill'
+import { useWindow } from '../composables/window.js'
+import { useSaved } from '../composables/saved.js'
 
-const { windows, getAllOpen, bringToFront, bringAllToBack } = useWindow();
+const { windows, getAllOpen, bringToFront, bringAllToBack } = useWindow()
+const { saveTabs, error: saveError } = useSaved()
+const saveMessage = ref('')
 
 onBeforeMount(async () => {
-    await getAllOpen()
-    console.log('onMounted', windows.value);
-
+  await getAllOpen()
 })
-onMounted(() => {
 
-})
+function windowLabel(win, index) {
+  const raw = (win.title || '').replace('— Mozilla Firefox', '').trim()
+  return raw || `Window ${index + 1}`
+}
+
+async function saveWindow(win, index) {
+  saveMessage.value = ''
+  const tabs = await browser.tabs.query({ windowId: win.id })
+  const set = await saveTabs(tabs, windowLabel(win, index))
+  if (set) saveMessage.value = `Saved “${set.name}”`
+}
 </script>
 
 <template>
@@ -41,6 +52,10 @@ onMounted(() => {
             </button>
         </div>
 
+        <p v-if="saveMessage || saveError" class="px-2 text-xs text-slate-600 dark:text-slate-200">
+            {{ saveMessage || saveError }}
+        </p>
+
         <div class="w-full">
             <div v-for="(win, i) in windows" :key="i"
                 class="flex items-center justify-between p-2 mt-1 w-full cursor-pointer hover:bg-slate-200 dark:hover:bg-slate-600 rounded-sm">
@@ -56,6 +71,8 @@ onMounted(() => {
                 </div>
                 <div class="flex items-center justify-between gap-1">
                     <button
+                        type="button"
+                        @click="saveWindow(win, i)"
                         class='flex items-center text-xl hover:cursor-pointer bg-lightPrimary p-2 text-brand-500 hover:bg-gray-100 dark:bg-navy-700 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/10 rounded-lg'>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                             stroke="currentColor" class="size-5  dark:text-slate-50">
