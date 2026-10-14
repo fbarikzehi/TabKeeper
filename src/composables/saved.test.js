@@ -47,6 +47,20 @@ describe('useSaved', () => {
     expect(browser.storage.local.set).toHaveBeenCalled()
   })
 
+  it('renameSet updates name and persists', async () => {
+    browser.storage.local.get.mockResolvedValue({
+      savedSets: [{ id: 'n', name: 'Old', createdAt: 1, tabs: [] }],
+    })
+    browser.storage.local.set.mockResolvedValue(undefined)
+    const { savedSets, loadSavedSets, renameSet } = useSaved()
+    await loadSavedSets()
+    await renameSet('n', 'New Name')
+    expect(savedSets.value[0].name).toBe('New Name')
+    expect(browser.storage.local.set).toHaveBeenCalledWith({
+      savedSets: [{ id: 'n', name: 'New Name', createdAt: 1, tabs: [] }],
+    })
+  })
+
   it('deleteSet removes by id', async () => {
     browser.storage.local.get.mockResolvedValue({
       savedSets: [{ id: 'x', name: 'A', createdAt: 1, tabs: [] }],

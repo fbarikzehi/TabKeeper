@@ -42,6 +42,7 @@ export function useSaved() {
   async function renameSet(id, name) {
     error.value = null
     try {
+      await loadSavedSets()
       const next = savedSets.value.map((s) =>
         s.id === id ? { ...s, name: name.trim() || s.name } : s,
       )
@@ -54,6 +55,7 @@ export function useSaved() {
   async function deleteSet(id) {
     error.value = null
     try {
+      await loadSavedSets()
       await persist(savedSets.value.filter((s) => s.id !== id))
     } catch (e) {
       error.value = e?.message || String(e)
@@ -63,6 +65,7 @@ export function useSaved() {
   async function restoreSet(id) {
     error.value = null
     try {
+      await loadSavedSets()
       const set = savedSets.value.find((s) => s.id === id)
       if (!set) {
         error.value = 'Saved set not found'
