@@ -25,3 +25,5 @@ dist-ssr
 
 .worktrees/
 .superpowers/
+web-ext-artifacts/
+*.xpi

@@ -1,14 +1,15 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import { resolve } from 'node:path'
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [vue()],
   build: {
-    outDir: 'dist', // Output directory
+    outDir: 'dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: {
-        popup: './index.html', // Entry for the popup
+        index: resolve(__dirname, 'index.html'),
       },
       output: {
         entryFileNames: '[name].js',
@@ -17,5 +18,5 @@ export default defineConfig({
       },
     },
   },
-  base: './', // Ensures assets are loaded with relative paths
+  base: './',
 })
